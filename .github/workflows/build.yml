@@ -8,6 +8,11 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
+    env:
+      ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+      ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
+      PATH: /home/runner/.buildozer/android/platform/android-sdk/platform-tools:/home/runner/.buildozer/android/platform/android-sdk/build-tools/33.0.2:$PATH
+
     steps:
       - uses: actions/checkout@v4
 
@@ -23,19 +28,18 @@ jobs:
           libncurses5-dev libncursesw5-dev libtinfo5 cmake \
           libffi-dev libssl-dev build-essential
 
-      # ✅ Install Android SDK in Buildozer's real path
-      - name: Install Android SDK for Buildozer
+      - name: Install Android SDK EXACTLY where Buildozer wants
         run: |
-          mkdir -p /home/runner/.buildozer/android/platform
-          cd /home/runner/.buildozer/android/platform
+          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
+          cd /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
 
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
           unzip sdk.zip
-          mv cmdline-tools android-sdk
+          mv cmdline-tools latest
 
-          yes | android-sdk/bin/sdkmanager --licenses
+          yes | ../latest/bin/sdkmanager --licenses
 
-          android-sdk/bin/sdkmanager \
+          ../latest/bin/sdkmanager \
             "platform-tools" \
             "platforms;android-33" \
             "build-tools;33.0.2"
