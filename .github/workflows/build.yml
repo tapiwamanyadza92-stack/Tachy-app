@@ -3,6 +3,7 @@ name: Build TACHY APK
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,35 +12,42 @@ jobs:
     env:
       ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
       ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
-      PATH: /home/runner/.buildozer/android/platform/android-sdk/platform-tools:/home/runner/.buildozer/android/platform/android-sdk/build-tools/33.0.2:$PATH
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install system packages
+      - name: Install system dependencies
         run: |
           sudo apt update
-          sudo apt install -y openjdk-17-jdk unzip wget git zip \
-          autoconf libtool pkg-config zlib1g-dev \
-          libncurses5-dev libncursesw5-dev libtinfo5 cmake \
-          libffi-dev libssl-dev build-essential
+          sudo apt install -y \
+            tar \
+            git zip unzip wget curl \
+            openjdk-17-jdk \
+            build-essential \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev
 
-      - name: Install Android SDK EXACTLY where Buildozer wants
+      - name: Install Android SDK (Buildozer compatible)
         run: |
-          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
-          cd /home/runner/.buildozer/android/platform/android-sdk/cmdline-tools
+          mkdir -p $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
+          cd $HOME/.buildozer/android/platform/android-sdk/cmdline-tools
 
           wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
           unzip sdk.zip
           mv cmdline-tools latest
 
-          yes | ../latest/bin/sdkmanager --licenses
+          export PATH=$HOME/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:$PATH
 
-          ../latest/bin/sdkmanager \
+          yes | sdkmanager --licenses
+
+          sdkmanager \
             "platform-tools" \
             "platforms;android-33" \
             "build-tools;33.0.2"
@@ -49,11 +57,16 @@ jobs:
           pip install --upgrade pip
           pip install cython==0.29.36 buildozer
 
+      - name: Initialize Buildozer
+        run: |
+          buildozer init || true
+
       - name: Build APK
         run: |
           buildozer android debug
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: tachy-apk
           path: bin/*.apk
