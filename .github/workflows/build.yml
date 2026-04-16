@@ -1,32 +1,47 @@
-name: Build Tachy APK
+name: Build TACHY APK
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04   # IMPORTANT: not 24.04
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'   # fixes distutils problem
 
-      - name: Install system dependencies
+      - name: Install system packages
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk \
-            python3-setuptools python3-pip python3-dev
+          sudo apt update
+          sudo apt install -y \
+            python3-pip \
+            build-essential \
+            git \
+            zip \
+            unzip \
+            openjdk-17-jdk \
+            autoconf \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
+            cmake \
+            libffi-dev \
+            libssl-dev
 
-      - name: Install python packages
+      - name: Install Buildozer
         run: |
           pip install --upgrade pip
-          pip install setuptools wheel cython buildozer
+          pip install buildozer cython==0.29.36
 
       - name: Initialize buildozer
         run: |
@@ -35,6 +50,12 @@ jobs:
       - name: Build APK
         run: |
           buildozer android debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tachy-apk
+          path: bin/*.apk          buildozer android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
